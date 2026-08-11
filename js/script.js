@@ -83,7 +83,7 @@ function defaultState(){
 }
 
 let state = defaultState();
-let timer = {running:false, seconds:0, intervalId:null};
+let timer = {running:false, accumulated:0, startTimestamp:null, intervalId:null};
 let bossConfirmPending = false;
 
 function loadState(){
@@ -237,33 +237,89 @@ function beatBoss(){
   saveState();
 }
 
-/* --- Timer de estudo --- */
+/* --- Timer de estudo ---
+   Baseado em timestamp real (não em contagem de "ticks"), para não perder tempo
+   quando a aba fica em segundo plano ou minimizada (o navegador pode pausar/atrasar
+   o setInterval, mas não altera o relógio do sistema). O estado do timer também é
+   salvo no localStorage a cada mudança, então mesmo que a página seja recarregada
+   sem querer, o tempo já decorrido é recuperado. */
+const TIMER_KEY = 'jornada-rpg-timer-v1';
+
 function formatTime(totalSeconds){
   const h = String(Math.floor(totalSeconds/3600)).padStart(2,'0');
   const m = String(Math.floor((totalSeconds%3600)/60)).padStart(2,'0');
   const s = String(totalSeconds%60).padStart(2,'0');
   return `${h}:${m}:${s}`;
 }
-function tickTimer(){
-  timer.seconds += 1;
-  document.getElementById('timerDisplay').textContent = formatTime(timer.seconds);
+
+function currentElapsedSeconds(){
+  const running = timer.running ? (Date.now() - timer.startTimestamp)/1000 : 0;
+  return Math.floor(timer.accumulated + running);
 }
+
+function saveTimerState(){
+  try{
+    localStorage.setItem(TIMER_KEY, JSON.stringify({
+      running: timer.running,
+      accumulated: timer.accumulated,
+      startTimestamp: timer.startTimestamp,
+    }));
+  }catch(e){ /* silencioso */ }
+}
+
+function clearTimerState(){
+  try{ localStorage.removeItem(TIMER_KEY); }catch(e){ /* silencioso */ }
+}
+
+function restoreTimerState(){
+  try{
+    const raw = localStorage.getItem(TIMER_KEY);
+    if(!raw) return;
+    const saved = JSON.parse(raw);
+    if(saved.running){
+      timer.accumulated = saved.accumulated;
+      timer.startTimestamp = saved.startTimestamp;
+      timer.running = true;
+      timer.intervalId = setInterval(tickTimer, 1000);
+      document.getElementById('timerStartBtn').disabled = true;
+      document.getElementById('timerPauseBtn').disabled = false;
+      document.getElementById('timerStopBtn').disabled = false;
+      showToast('⏳ Sessão de estudo recuperada — o tempo continuou contando.');
+    } else if(saved.accumulated > 0){
+      timer.accumulated = saved.accumulated;
+      document.getElementById('timerPauseBtn').disabled = true;
+      document.getElementById('timerStopBtn').disabled = false;
+    }
+    document.getElementById('timerDisplay').textContent = formatTime(currentElapsedSeconds());
+  }catch(e){ /* sem sessão salva */ }
+}
+
+function tickTimer(){
+  document.getElementById('timerDisplay').textContent = formatTime(currentElapsedSeconds());
+}
+
 function startTimer(){
   timer.running = true;
+  timer.startTimestamp = Date.now();
   timer.intervalId = setInterval(tickTimer, 1000);
   document.getElementById('timerStartBtn').disabled = true;
   document.getElementById('timerPauseBtn').disabled = false;
   document.getElementById('timerStopBtn').disabled = false;
+  saveTimerState();
 }
 function pauseTimer(){
+  timer.accumulated += (Date.now() - timer.startTimestamp)/1000;
   timer.running = false;
   clearInterval(timer.intervalId);
   document.getElementById('timerStartBtn').disabled = false;
   document.getElementById('timerPauseBtn').disabled = true;
+  document.getElementById('timerDisplay').textContent = formatTime(currentElapsedSeconds());
+  saveTimerState();
 }
 function stopTimer(){
+  const totalSeconds = currentElapsedSeconds();
   clearInterval(timer.intervalId);
-  const minutes = Math.floor(timer.seconds/60);
+  const minutes = Math.floor(totalSeconds/60);
   if(minutes < 1){
     showToast('Estude por pelo menos 1 minuto para ganhar XP.');
   } else {
@@ -271,14 +327,46 @@ function stopTimer(){
     state.minutesToday += minutes;
     gainXP(earned, {isStudy:true});
   }
-  timer.seconds = 0;
+  timer.accumulated = 0;
   timer.running = false;
+  timer.startTimestamp = null;
   document.getElementById('timerDisplay').textContent = formatTime(0);
   document.getElementById('timerStartBtn').disabled = false;
   document.getElementById('timerPauseBtn').disabled = true;
   document.getElementById('timerStopBtn').disabled = true;
+  clearTimerState();
   renderStudy();
   saveState();
+}
+
+/* Ajuste manual — rede de segurança para quando o cronômetro falhar por
+   qualquer motivo e o usuário já sabe quanto tempo estudou. */
+function openManualTimeForm(){
+  document.getElementById('manualTimeForm').style.display = 'block';
+}
+function closeManualTimeForm(){
+  document.getElementById('manualTimeForm').style.display = 'none';
+  document.getElementById('manualHours').value = '0';
+  document.getElementById('manualMinutes').value = '0';
+}
+function applyManualTime(){
+  const hours = parseInt(document.getElementById('manualHours').value) || 0;
+  const minutes = parseInt(document.getElementById('manualMinutes').value) || 0;
+  const totalMinutes = hours*60 + minutes;
+  if(totalMinutes < 1){
+    showToast('Informe pelo menos 1 minuto.');
+    return;
+  }
+  if(timer.running){
+    timer.accumulated += (Date.now() - timer.startTimestamp)/1000;
+    timer.startTimestamp = Date.now();
+  }
+  timer.accumulated += totalMinutes*60;
+  document.getElementById('timerDisplay').textContent = formatTime(currentElapsedSeconds());
+  document.getElementById('timerStopBtn').disabled = false;
+  saveTimerState();
+  closeManualTimeForm();
+  showToast(`Adicionado(s) ${totalMinutes} minuto(s) ao cronômetro.`);
 }
 
 /* --- Personagem ilustrado (mais detalhado que silhueta) --- */
@@ -518,5 +606,17 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
 document.getElementById('timerStartBtn').addEventListener('click', startTimer);
 document.getElementById('timerPauseBtn').addEventListener('click', pauseTimer);
 document.getElementById('timerStopBtn').addEventListener('click', stopTimer);
+document.getElementById('manualTimeBtn').addEventListener('click', openManualTimeForm);
+document.getElementById('applyManualTimeBtn').addEventListener('click', applyManualTime);
+document.getElementById('cancelManualTimeBtn').addEventListener('click', closeManualTimeForm);
+
+// Ao voltar para a aba, atualiza o mostrador imediatamente com o tempo real
+// decorrido (o cálculo é sempre por timestamp, então nada se perde).
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible' && timer.running){
+    document.getElementById('timerDisplay').textContent = formatTime(currentElapsedSeconds());
+  }
+});
 
 loadState();
+restoreTimerState();

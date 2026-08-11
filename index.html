@@ -6,7 +6,7 @@
 <title>Jornada — Crônicas do Aprendiz</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="grain"></div>
@@ -137,11 +137,31 @@
     <div class="panel">
       <h3 style="margin-top:0;text-align:center;">⏳ Tempo de Estudo</h3>
       <div class="timer-display" id="timerDisplay">00:00:00</div>
-      <div class="timer-sub">1 minuto estudado = <span id="rateLabel">2</span> XP</div>
+      <div class="timer-sub">1 minuto estudado = <span id="rateLabel">2</span> XP · o tempo continua contando mesmo se você trocar de aba</div>
       <div class="timer-controls">
         <button class="btn" id="timerStartBtn">Iniciar</button>
         <button class="btn secondary" id="timerPauseBtn" disabled>Pausar</button>
         <button class="btn danger" id="timerStopBtn" disabled>Concluir e Ganhar XP</button>
+      </div>
+      <div style="text-align:center;margin-top:10px;">
+        <button class="btn secondary" id="manualTimeBtn">+ Adicionar tempo manualmente</button>
+      </div>
+      <div id="manualTimeForm" style="display:none;margin-top:14px;background:var(--wood-dark);border:1px solid #5c4128;border-radius:10px;padding:14px;">
+        <p style="font-size:0.8rem;color:var(--parchment-dark);margin:0 0 10px;">Já sabe quanto tempo estudou e o cronômetro falhou? Informe abaixo — o valor é somado ao tempo já contado.</p>
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+          <div>
+            <label style="display:block;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--parchment-dark);margin-bottom:4px;">Horas</label>
+            <input type="number" id="manualHours" value="0" min="0" style="width:80px;padding:8px;border-radius:6px;border:1px solid #4d3f2c;background:var(--stone-dark);color:var(--parchment);font-family:'EB Garamond',serif;">
+          </div>
+          <div>
+            <label style="display:block;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--parchment-dark);margin-bottom:4px;">Minutos</label>
+            <input type="number" id="manualMinutes" value="0" min="0" max="59" style="width:80px;padding:8px;border-radius:6px;border:1px solid #4d3f2c;background:var(--stone-dark);color:var(--parchment);font-family:'EB Garamond',serif;">
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:12px;">
+          <button class="btn" id="applyManualTimeBtn">Adicionar ao Cronômetro</button>
+          <button class="btn secondary" id="cancelManualTimeBtn">Cancelar</button>
+        </div>
       </div>
     </div>
     <div class="panel">
@@ -153,6 +173,6 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
