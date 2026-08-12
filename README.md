@@ -1,10 +1,10 @@
 # ⚔️ Crônicas do Aprendiz
 
-Um aplicativo pessoal de acompanhamento de estudos com estética de **RPG medieval/fantasia**. Em vez de um dashboard de produtividade, sua jornada de aprendizado vira uma campanha: você tem um personagem que evolui, um mapa de regiões para conquistar, quests com XP e Bosses que são, na verdade, projetos práticos reais.
+Um aplicativo, 100% feito por IA, de acompanhamento de estudos com estética de **RPG medieval/fantasia**. Em vez de um dashboard de produtividade, sua jornada de aprendizado vira uma campanha: você tem um personagem que evolui, um mapa de regiões para conquistar, quests com XP e Bosses que são, na verdade, projetos práticos reais.
 
 ## Sobre o projeto
 
-Este é um projeto pessoal, simples e sem overengineering — HTML, CSS e JavaScript puros, sem build, sem backend, sem autenticação. Todo o progresso fica salvo no `localStorage` do próprio navegador.
+Este é um projeto simples e sem overengineering — HTML, CSS e JavaScript puros, sem build, sem backend, sem autenticação. Todo o progresso fica salvo no `localStorage` do próprio navegador.
 
 A ideia central: quando bater a preguiça de estudar, abrir o app e pensar *"meu personagem ainda precisa evoluir"*, *"falta pouco para derrotar o Boss"*, *"quero desbloquear aquele equipamento"*.
 
